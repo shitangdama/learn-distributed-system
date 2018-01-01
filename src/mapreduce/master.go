@@ -11,6 +11,7 @@ import (
 )
 
 // Master holds all the state that the master needs to keep track of.
+// 这里有个同步锁
 type Master struct {
 	sync.Mutex
 
@@ -63,7 +64,6 @@ func Sequential(jobName string, files []string, nreduce int,
 ) (mr *Master) {
 	mr = newMaster("master")
 	go mr.run(jobName, files, nreduce, func(phase jobPhase) {
-		fmt.Println(phase)
 		switch phase {
 		case mapPhase:
 			for i, f := range mr.files {
@@ -77,6 +77,7 @@ func Sequential(jobName string, files []string, nreduce int,
 			}
 		}
 	}, func() {
+		fmt.Println("111111111111111111111")
 		mr.stats = []int{len(files) + nreduce}
 	})
 	return
@@ -141,7 +142,6 @@ func (mr *Master) run(jobName string, files []string, nreduce int,
 	mr.nReduce = nreduce
 
 	fmt.Printf("%s: Starting Map/Reduce task %s\n", mr.address, mr.jobName)
-
 	schedule(mapPhase)
 	schedule(reducePhase)
 	finish()
