@@ -5,11 +5,13 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"os"
+	// "fmt"
   )
 
 // doMap manages one map task: it reads one of the input files
 // (inFile), calls the user-defined map function (mapF) for that file's
 // contents, and partitions the output into nReduce intermediate files.
+// 
 func doMap(
 	jobName string, // the name of the MapReduce job
 	mapTaskNumber int, // which map task this is
@@ -17,7 +19,7 @@ func doMap(
 	nReduce int, // the number of reduce task that will be run ("R" in the paper)
 	mapF func(file string, contents string) []KeyValue,
 ) {
-	//
+	// 实现domap函数
 	// You will need to write this function.
 	//
 	// The intermediate output of a map task is stored as multiple
@@ -56,6 +58,11 @@ func doMap(
 	//
 	// Remember to close the file after you have written all the values!
 	//
+
+	// 读取文件；
+	// 将读文件的内容，调用用户 Map 函数，生产对于的 KeyValue 值；
+	// 最后按照 KeyValue 里面的 Key 进行分区，将内容写入到文件里面，以便于后面的 Reduce 过程执行；
+
 	data, e := ioutil.ReadFile(inFile)
 	if e != nil {
 	  panic("ReadFile")
@@ -73,10 +80,10 @@ func doMap(
 	}
   
 	for _, pair := range pairs {
-	  i := ihash(pair.Key) % nReduce
-	  e := encoders[i].Encode(&pair)
-	  if e != nil {
-		panic("Encode")
+			i := ihash(pair.Key) % nReduce
+			e := encoders[i].Encode(&pair)
+			if e != nil {
+			panic("Encode")
 	  }
 	}
 }

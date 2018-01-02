@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"mapreduce"
 	"os"
+	"strconv"
+	"unicode"
 )
 
 //
@@ -15,6 +17,18 @@ import (
 //
 func mapF(filename string, contents string) []mapreduce.KeyValue {
 	// TODO: you have to write this function
+	pairs := make([]mapreduce.KeyValue, 0)
+	from := 0
+	for i, c := range contents {
+	  if !unicode.IsLetter(c) {
+		if i - from > 0 {
+		  pair := mapreduce.KeyValue{contents[from : i], "0"}
+		  pairs = append(pairs, pair)
+		}
+		from = i + 1
+	  }
+	}
+	return pairs
 }
 
 //
@@ -24,6 +38,8 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// TODO: you also have to write this function
+	fmt.Printf("%s", values)
+	return strconv.Itoa(len(values))
 }
 
 // Can be run in 3 ways:
@@ -36,7 +52,9 @@ func main() {
 	} else if os.Args[1] == "master" {
 		var mr *mapreduce.Master
 		if os.Args[2] == "sequential" {
-			mr = mapreduce.Sequential("wcseq", os.Args[3:], 3, mapF, reduceF)
+			// lib2 走的这个分支
+			fmt.Printf("%s", os.Args[3:])
+			// mr = mapreduce.Sequential("wcseq", os.Args[3:], 3, mapF, reduceF)
 		} else {
 			mr = mapreduce.Distributed("wcseq", os.Args[3:], 3, os.Args[2])
 		}

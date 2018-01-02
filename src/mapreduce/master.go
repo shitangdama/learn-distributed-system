@@ -62,6 +62,7 @@ func Sequential(jobName string, files []string, nreduce int,
 	mapF func(string, string) []KeyValue,
 	reduceF func(string, []string) string,
 ) (mr *Master) {
+	fmt.Printf("%d", len(files))
 	mr = newMaster("master")
 	go mr.run(jobName, files, nreduce, func(phase jobPhase) {
 		switch phase {
@@ -77,7 +78,7 @@ func Sequential(jobName string, files []string, nreduce int,
 			}
 		}
 	}, func() {
-		fmt.Println("111111111111111111111")
+
 		mr.stats = []int{len(files) + nreduce}
 	})
 	return
@@ -142,7 +143,9 @@ func (mr *Master) run(jobName string, files []string, nreduce int,
 	mr.nReduce = nreduce
 
 	fmt.Printf("%s: Starting Map/Reduce task %s\n", mr.address, mr.jobName)
+	// 先进行map
 	schedule(mapPhase)
+	// 在进行reduce
 	schedule(reducePhase)
 	finish()
 	mr.merge()
