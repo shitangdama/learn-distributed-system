@@ -53,8 +53,8 @@ func main() {
 		var mr *mapreduce.Master
 		if os.Args[2] == "sequential" {
 			// lib2 走的这个分支
-			fmt.Printf("%s", os.Args[3:])
-			// mr = mapreduce.Sequential("wcseq", os.Args[3:], 3, mapF, reduceF)
+			// os.Args[3:][pg-being_ernest.txt pg-dorian_gray.txt pg-dracula.txt pg-emma.txt pg-frankenstein.txt pg-great_expectations.txt pg-grimm.txt pg-huckleberry_finn.txt pg-les_miserables.txt pg-metamorphosis.txt pg-moby_dick.txt pg-sherlock_holmes.txt pg-tale_of_two_cities.txt pg-tom_sawyer.txt pg-ulysses.txt pg-war_and_peace.txt]
+			mr = mapreduce.Sequential("wcseq", os.Args[3:], 3, mapF, reduceF)
 		} else {
 			mr = mapreduce.Distributed("wcseq", os.Args[3:], 3, os.Args[2])
 		}

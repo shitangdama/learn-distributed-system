@@ -1,6 +1,7 @@
 package mapreduce
 
 import (
+	// "fmt"
 	"os"
 	"encoding/json"
 	"log"
@@ -61,6 +62,7 @@ func doReduce(
 			log.Fatal("Open error: ", err)
 		}
 		dec := json.NewDecoder(file)
+		// fmt.Printf(dec)
 		//iterate each pairs in the file
 		//append the pair's Value for which has the same Key
 		//e.g. before reduce: ["a", "1"] ["b", "2"] ["a", "3"] ["b", "5"] ["c", "6"]
@@ -99,4 +101,5 @@ func doReduce(
 		enc.Encode(&KeyValue{k, res})
 	}
 	merge_file.Close()
+	// 要删除文件
 }

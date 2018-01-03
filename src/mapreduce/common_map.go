@@ -1,6 +1,7 @@
 package mapreduce
 
 import (
+	"fmt"
 	"hash/fnv"
 	"io/ioutil"
 	"encoding/json"
@@ -67,6 +68,7 @@ func doMap(
 	if e != nil {
 	  panic("ReadFile")
 	}
+	fmt.Printf(string(data))
 	pairs := mapF(inFile, string(data))
   
 	encoders := make([]*json.Encoder, nReduce)
