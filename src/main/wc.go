@@ -20,11 +20,20 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 	pairs := make([]mapreduce.KeyValue, 0)
 	from := 0
 	for i, c := range contents {
+		// i是数字，表示坐标，后缀指针
+		// c是单词
 	  if !unicode.IsLetter(c) {
 		if i - from > 0 {
+		//   fmt.Printf(contents[from : i])
+		//   contents[from : i] 一个单词
+		// KeyValue是common.go中一个结构，一个对象包含key和value两个属性
+		// 这个地方不对，对应的key应该是的
 		  pair := mapreduce.KeyValue{contents[from : i], "0"}
+		//   append是合并数组的意思
+		// 这里不应该是合并数组
 		  pairs = append(pairs, pair)
 		}
+		// 这里将from前缀指针更新
 		from = i + 1
 	  }
 	}
@@ -38,7 +47,7 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// TODO: you also have to write this function
-	fmt.Printf("%s", values)
+	// fmt.Printf("%s", values)
 	return strconv.Itoa(len(values))
 }
 
