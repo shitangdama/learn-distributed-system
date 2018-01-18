@@ -11,7 +11,6 @@ import (
 )
 
 // Master holds all the state that the master needs to keep track of.
-// 这里有个同步锁
 type Master struct {
 	sync.Mutex
 
@@ -62,23 +61,21 @@ func Sequential(jobName string, files []string, nreduce int,
 	mapF func(string, string) []KeyValue,
 	reduceF func(string, []string) string,
 ) (mr *Master) {
-	// fmt.Printf("%d", len(files))
 	mr = newMaster("master")
+	// 在这个进行的分发，感觉这里
 	go mr.run(jobName, files, nreduce, func(phase jobPhase) {
+		// 这个是具体运行map还是reduce函数
 		switch phase {
-		case mapPhase:
-			for i, f := range mr.files {
-				doMap(mr.jobName, i, f, mr.nReduce, mapF)
-			}
-		case reducePhase:
-			
-			for i := 0; i < mr.nReduce; i++ {
-				fmt.Println(mr.jobName, i)
-				doReduce(mr.jobName, i, mergeName(mr.jobName, i), len(mr.files), reduceF)
-			}
+			case mapPhase:
+				for i, f := range mr.files {
+					doMap(mr.jobName, i, f, mr.nReduce, mapF)
+				}
+			case reducePhase:
+				for i := 0; i < mr.nReduce; i++ {
+					doReduce(mr.jobName, i, mergeName(mr.jobName, i), len(mr.files), reduceF)
+				}
 		}
 	}, func() {
-
 		mr.stats = []int{len(files) + nreduce}
 	})
 	return
@@ -138,14 +135,14 @@ func (mr *Master) run(jobName string, files []string, nreduce int,
 	schedule func(phase jobPhase),
 	finish func(),
 ) {
+	// 一个总状态的节点
 	mr.jobName = jobName
 	mr.files = files
 	mr.nReduce = nreduce
 
 	fmt.Printf("%s: Starting Map/Reduce task %s\n", mr.address, mr.jobName)
-	// 先进行map
+
 	schedule(mapPhase)
-	// 在进行reduce
 	schedule(reducePhase)
 	finish()
 	mr.merge()

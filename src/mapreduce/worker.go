@@ -87,7 +87,6 @@ func RunWorker(MasterAddress string, me string,
 	ReduceFunc func(string, []string) string,
 	nRPC int,
 ) {
-	fmt.Printf(MasterAddress)
 	debug("RunWorker %s\n", me)
 	wk := new(Worker)
 	wk.name = me

@@ -16,24 +16,30 @@ import (
 // of key/value pairs.
 //
 func mapF(filename string, contents string) []mapreduce.KeyValue {
-	// TODO: you have to write this function
 	pairs := make([]mapreduce.KeyValue, 0)
 	from := 0
 	for i, c := range contents {
 		// i是数字，表示坐标，后缀指针
 		// c是单词
 	  if !unicode.IsLetter(c) {
-		if i - from > 0 {
-		//   fmt.Printf(contents[from : i])
-		//   contents[from : i] 一个单词
-		// KeyValue是common.go中一个结构，一个对象包含key和value两个属性
-		// 这个地方不对，对应的key应该是的
-		  pair := mapreduce.KeyValue{contents[from : i], "0"}
-		//   append是合并数组的意思
-		// 这里不应该是合并数组
-		  pairs = append(pairs, pair)
-		}
-		// 这里将from前缀指针更新
+			if i - from > 0 {
+				// fmt.Printf(contents[from : i])
+				// contents[from : i] 一个单词
+				// KeyValue是common.go中一个结构，一个对象包含key和value两个属性
+				// 因为设计原因value是0,这个地方意思是每出现一个词就产生一个记录
+				pair := mapreduce.KeyValue{contents[from : i], "0"}
+				// 这里的keyvalue是直接定义在
+				// KeyValue is a type used to hold the key/value pairs passed to the map and
+				// reduce functions.
+				// type KeyValue struct {
+				// 	Key   string
+				// 	Value string
+				// }
+				// append是合并数组的意思
+				// 这里不应该是合并数组
+				pairs = append(pairs, pair)
+			}
+		// 这里将from前缀指针更新，这样统计新词从以处理词汇末开始
 		from = i + 1
 	  }
 	}
@@ -47,7 +53,6 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// TODO: you also have to write this function
-	// fmt.Printf("%s", values)
 	return strconv.Itoa(len(values))
 }
 
@@ -61,8 +66,6 @@ func main() {
 	} else if os.Args[1] == "master" {
 		var mr *mapreduce.Master
 		if os.Args[2] == "sequential" {
-			// lib2 走的这个分支
-			// os.Args[3:][pg-being_ernest.txt pg-dorian_gray.txt pg-dracula.txt pg-emma.txt pg-frankenstein.txt pg-great_expectations.txt pg-grimm.txt pg-huckleberry_finn.txt pg-les_miserables.txt pg-metamorphosis.txt pg-moby_dick.txt pg-sherlock_holmes.txt pg-tale_of_two_cities.txt pg-tom_sawyer.txt pg-ulysses.txt pg-war_and_peace.txt]
 			mr = mapreduce.Sequential("wcseq", os.Args[3:], 3, mapF, reduceF)
 		} else {
 			mr = mapreduce.Distributed("wcseq", os.Args[3:], 3, os.Args[2])

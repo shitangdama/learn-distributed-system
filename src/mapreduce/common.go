@@ -19,10 +19,9 @@ func debug(format string, a ...interface{}) (n int, err error) {
 // jobPhase indicates whether a task is scheduled as a map or reduce task.
 type jobPhase string
 
-// 这个地方对reducePhase添加jobPhase格式，虽然jobPhase就是string格式
 const (
 	mapPhase    jobPhase = "Map"
-	reducePhase   jobPhase = "Reduce"
+	reducePhase          = "Reduce"
 )
 
 // KeyValue is a type used to hold the key/value pairs passed to the map and

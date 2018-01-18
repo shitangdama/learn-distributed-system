@@ -15,18 +15,21 @@ import (
 
 const (
 	nNumber = 100000
-	nMap    = 100
-	nReduce = 50
+	nMap    = 20
+	nReduce = 10
 )
 
 // Create input file with N numbers
 // Check if we have N numbers in output file
 
 // Split in words
+// test中使用的map函数
 func MapFunc(file string, value string) (res []KeyValue) {
 	debug("Map %v\n", value)
+	// Fields函数分割string
 	words := strings.Fields(value)
 	for _, w := range words {
+		// w是词，test中是1-10w
 		kv := KeyValue{w, ""}
 		res = append(res, kv)
 	}
@@ -96,7 +99,7 @@ func checkWorker(t *testing.T, l []int) {
 }
 
 // Make input file
-// 创造n个文件
+// 该函数产生一个函数，名字是根据num产生子文件
 func makeInputs(num int) []string {
 	var names []string
 	var i = 0
@@ -107,8 +110,8 @@ func makeInputs(num int) []string {
 			log.Fatal("mkInput: ", err)
 		}
 		w := bufio.NewWriter(file)
-		// nNumber常量，定义的为10000，写入
 		for i < (f+1)*(nNumber/num) {
+			// 产生的文件中的写入是由这里产生的
 			fmt.Fprintf(w, "%d\n", i)
 			i++
 		}
@@ -146,9 +149,7 @@ func cleanup(mr *Master) {
 }
 
 func TestSequentialSingle(t *testing.T) {
-	// 这里有三个函数
-	// makeInputs(1)为初始化
-	// 
+	fmt.Println("222222222")
 	mr := Sequential("test", makeInputs(1), 1, MapFunc, ReduceFunc)
 	mr.Wait()
 	check(t, mr.files)
@@ -157,6 +158,7 @@ func TestSequentialSingle(t *testing.T) {
 }
 
 func TestSequentialMany(t *testing.T) {
+	fmt.Println("33333333")
 	mr := Sequential("test", makeInputs(5), 3, MapFunc, ReduceFunc)
 	mr.Wait()
 	check(t, mr.files)

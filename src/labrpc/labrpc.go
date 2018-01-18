@@ -12,7 +12,7 @@ package labrpc
 //
 // adapted from Go net/rpc/server.go.
 //
-// sends gob-encoded values to ensure that RPCs
+// sends labgob-encoded values to ensure that RPCs
 // don't include references to program objects.
 //
 // net := MakeNetwork() -- holds network, clients, servers.
@@ -50,7 +50,7 @@ package labrpc
 //   pass svc to srv.AddService()
 //
 
-import "encoding/gob"
+import "labgob"
 import "bytes"
 import "reflect"
 import "sync"
@@ -58,6 +58,7 @@ import "log"
 import "strings"
 import "math/rand"
 import "time"
+import "sync/atomic"
 
 type reqMsg struct {
 	endname  interface{} // name of sending ClientEnd
@@ -88,7 +89,7 @@ func (e *ClientEnd) Call(svcMeth string, args interface{}, reply interface{}) bo
 	req.replyCh = make(chan replyMsg)
 
 	qb := new(bytes.Buffer)
-	qe := gob.NewEncoder(qb)
+	qe := labgob.NewEncoder(qb)
 	qe.Encode(args)
 	req.args = qb.Bytes()
 
@@ -97,7 +98,7 @@ func (e *ClientEnd) Call(svcMeth string, args interface{}, reply interface{}) bo
 	rep := <-req.replyCh
 	if rep.ok {
 		rb := bytes.NewBuffer(rep.reply)
-		rd := gob.NewDecoder(rb)
+		rd := labgob.NewDecoder(rb)
 		if err := rd.Decode(reply); err != nil {
 			log.Fatalf("ClientEnd.Call(): decode reply: %v\n", err)
 		}
@@ -117,6 +118,7 @@ type Network struct {
 	servers        map[interface{}]*Server     // servers, by name
 	connections    map[interface{}]interface{} // endname -> servername
 	endCh          chan reqMsg
+	count          int32 // total RPC count, for statistics
 }
 
 func MakeNetwork() *Network {
@@ -131,6 +133,7 @@ func MakeNetwork() *Network {
 	// single goroutine to handle all ClientEnd.Call()s
 	go func() {
 		for xreq := range rn.endCh {
+			atomic.AddInt32(&rn.count, 1)
 			go rn.ProcessReq(xreq)
 		}
 	}()
@@ -243,8 +246,12 @@ func (rn *Network) ProcessReq(req reqMsg) {
 		} else if longreordering == true && rand.Intn(900) < 600 {
 			// delay the response for a while
 			ms := 200 + rand.Intn(1+rand.Intn(2000))
-			time.Sleep(time.Duration(ms) * time.Millisecond)
-			req.replyCh <- reply
+			// Russ points out that this timer arrangement will decrease
+			// the number of goroutines, so that the race
+			// detector is less likely to get upset.
+			time.AfterFunc(time.Duration(ms)*time.Millisecond, func() {
+				req.replyCh <- reply
+			})
 		} else {
 			req.replyCh <- reply
 		}
@@ -260,8 +267,9 @@ func (rn *Network) ProcessReq(req reqMsg) {
 			// server in fairly rapid succession.
 			ms = (rand.Int() % 100)
 		}
-		time.Sleep(time.Duration(ms) * time.Millisecond)
-		req.replyCh <- replyMsg{false, nil}
+		time.AfterFunc(time.Duration(ms)*time.Millisecond, func() {
+			req.replyCh <- replyMsg{false, nil}
+		})
 	}
 
 }
@@ -324,6 +332,11 @@ func (rn *Network) GetCount(servername interface{}) int {
 
 	svr := rn.servers[servername]
 	return svr.GetCount()
+}
+
+func (rn *Network) GetTotalCount() int {
+	x := atomic.LoadInt32(&rn.count)
+	return int(x)
 }
 
 //
@@ -430,7 +443,7 @@ func (svc *Service) dispatch(methname string, req reqMsg) replyMsg {
 
 		// decode the argument.
 		ab := bytes.NewBuffer(req.args)
-		ad := gob.NewDecoder(ab)
+		ad := labgob.NewDecoder(ab)
 		ad.Decode(args.Interface())
 
 		// allocate space for the reply.
@@ -444,7 +457,7 @@ func (svc *Service) dispatch(methname string, req reqMsg) replyMsg {
 
 		// encode the reply.
 		rb := new(bytes.Buffer)
-		re := gob.NewEncoder(rb)
+		re := labgob.NewEncoder(rb)
 		re.EncodeValue(replyv)
 
 		return replyMsg{true, rb.Bytes()}
