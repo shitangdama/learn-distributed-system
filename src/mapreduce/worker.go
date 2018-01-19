@@ -89,18 +89,27 @@ func RunWorker(MasterAddress string, me string,
 ) {
 	debug("RunWorker %s\n", me)
 	wk := new(Worker)
+	// 使用wk作为公共对象
+	// 链接生成server
 	wk.name = me
 	wk.Map = MapFunc
 	wk.Reduce = ReduceFunc
 	wk.nRPC = nRPC
 	rpcs := rpc.NewServer()
 	rpcs.Register(wk)
+
+
 	os.Remove(me) // only needed for "unix"
 	l, e := net.Listen("unix", me)
 	if e != nil {
 		log.Fatal("RunWorker: worker ", me, " error: ", e)
 	}
 	wk.l = l
+
+	fmt.Println("11111111111111111111111")
+	fmt.Println(MasterAddress)
+	fmt.Println("11111111111111111111111")
+	
 	wk.register(MasterAddress)
 
 	// DON'T MODIFY CODE BELOW

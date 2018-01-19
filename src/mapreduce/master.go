@@ -104,7 +104,22 @@ func (mr *Master) forwardRegistrations(ch chan string) {
 
 // Distributed schedules map and reduce tasks on workers that register with the
 // master over RPC.
+// 注册
+// 这里应该是初始化信息
+// 20个map
+// 10个reduce
 func Distributed(jobName string, files []string, nreduce int, master string) (mr *Master) {
+	// master = /var/tmp/824-1000/mr5197-master
+	// nreduce = 10
+	// files 20个文件
+	// jobName = "test"
+	// newMaster格式
+	// 在这个地方应该是初始化
+
+	// 首先是对主控节点的初始化
+	// 两个chan一个锁定期唤醒锁
+	// 一个chan表示中断，一个表示完成
+	// 关于go的三个锁(Mutex、WaitGroup、Cond)
 	mr = newMaster(master)
 	mr.startRPCServer()
 	go mr.run(jobName, files, nreduce,

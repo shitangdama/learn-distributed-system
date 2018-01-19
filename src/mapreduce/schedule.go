@@ -15,22 +15,20 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	var ntasks int
 	var n_other int // number of inputs (for reduce) or outputs (for map)
 	switch phase {
-	case mapPhase:
-		ntasks = len(mapFiles)
-		n_other = nReduce
-	case reducePhase:
-		ntasks = nReduce
-		n_other = len(mapFiles)
+		case mapPhase:
+			ntasks = len(mapFiles)
+			n_other = nReduce
+		case reducePhase:
+			ntasks = nReduce
+			n_other = len(mapFiles)
 	}
 
 	fmt.Printf("Schedule: %v %v tasks (%d I/Os)\n", ntasks, phase, n_other)
+	// Schedule: 20 Map tasks (10 I/Os)
+	// Schedule: 10 Reduce tasks (20 I/Os)
+	// var wg sync.WaitGroup
+	// 需要声明一个WaitGroup组等待所
+	fmt.Println(ntasks)
 
-	// All ntasks tasks have to be scheduled on workers, and only once all of
-	// them have been completed successfully should the function return.
-	// Remember that workers may fail, and that any given worker may finish
-	// multiple tasks.
-	//
-	// TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-	//
 	fmt.Printf("Schedule: %v phase done\n", phase)
 }

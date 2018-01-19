@@ -135,8 +135,10 @@ func port(suffix string) string {
 }
 
 func setup() *Master {
+	// nMap = 20
 	files := makeInputs(nMap)
 	master := port("master")
+	// /var/tmp/824-1000/mr5197-master
 	mr := Distributed("test", files, nReduce, master)
 	return mr
 }
@@ -149,7 +151,6 @@ func cleanup(mr *Master) {
 }
 
 func TestSequentialSingle(t *testing.T) {
-	fmt.Println("222222222")
 	mr := Sequential("test", makeInputs(1), 1, MapFunc, ReduceFunc)
 	mr.Wait()
 	check(t, mr.files)
@@ -158,7 +159,6 @@ func TestSequentialSingle(t *testing.T) {
 }
 
 func TestSequentialMany(t *testing.T) {
-	fmt.Println("33333333")
 	mr := Sequential("test", makeInputs(5), 3, MapFunc, ReduceFunc)
 	mr.Wait()
 	check(t, mr.files)
@@ -176,6 +176,7 @@ func TestBasic(t *testing.T) {
 	check(t, mr.files)
 	checkWorker(t, mr.stats)
 	cleanup(mr)
+	// 
 }
 
 func TestOneFailure(t *testing.T) {

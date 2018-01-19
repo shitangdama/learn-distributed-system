@@ -40,7 +40,7 @@ type GetReply struct {
 //
 // Server
 //
-
+// kv是公开变量
 type KV struct {
 	mu       sync.Mutex
 	keyvalue map[string]string
@@ -74,12 +74,16 @@ func (kv *KV) Put(args *PutArgs, reply *PutReply) error {
 func server() {
 	kv := new(KV)
 	kv.keyvalue = map[string]string{}
+	// 三部走
 	rpcs := rpc.NewServer()
 	rpcs.Register(kv)
 	l, e := net.Listen("tcp", ":1234")
+
+
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
+
 	go func() {
 		for {
 			conn, err := l.Accept()
@@ -99,6 +103,7 @@ func server() {
 //
 
 func Dial() *rpc.Client {
+	// rpc第一次链接同步请求，用于传回一个链接client
 	client, err := rpc.Dial("tcp", ":1234")
 	if err != nil {
 		log.Fatal("dialing:", err)
@@ -119,9 +124,12 @@ func Get(key string) string {
 }
 
 func Put(key string, val string) {
+	// 进行第一次链接
 	client := Dial()
 	args := &PutArgs{"subject", "6.824"}
 	reply := PutReply{""}
+
+	// 都是异步，统一格式，调用名，参数的struct，和reply的struct
 	err := client.Call("KV.Put", args, &reply)
 	if err != nil {
 		log.Fatal("error:", err)
@@ -134,6 +142,7 @@ func Put(key string, val string) {
 //
 
 func main() {
+	// 先运行服务端代码
 	server()
 
 	Put("subject", "6.824")
