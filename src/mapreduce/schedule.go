@@ -1,6 +1,7 @@
 package mapreduce
 
 import "fmt"
+import "sync"
 
 //
 // schedule() starts and waits for all tasks in the given phase (Map
@@ -24,11 +25,30 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	}
 
 	fmt.Printf("Schedule: %v %v tasks (%d I/Os)\n", ntasks, phase, n_other)
-	// Schedule: 20 Map tasks (10 I/Os)
-	// Schedule: 10 Reduce tasks (20 I/Os)
+	fmt.Println(<-registerChan)
 	// var wg sync.WaitGroup
-	// 需要声明一个WaitGroup组等待所
-	fmt.Println(ntasks)
+	// wg.Add(ntasks)
+	// for taskNum:=0;taskNum<ntasks;taskNum++ {
+	// 	workerName:= <-registerChan
+	// 	go func (c int){
+	// 		deriveWork(workerName,jobName,mapFiles,phase,n_other,c,registerChan,&wg)
+	// 	}(taskNum)
+	// }
+
+	// wg.Wait();
 
 	fmt.Printf("Schedule: %v phase done\n", phase)
+}
+
+func deriveWork(workerName string,jobName string,mapFiles []string,phase jobPhase,n_other int,c int,registerChan chan string,wg *sync.WaitGroup){
+	
+// 	// workername是地址
+// 	// dotask是任务
+// 	if(call(workerName,"Worker.DoTask",DoTaskArgs{jobName,mapFiles[c],phase,c,n_other},nil)){
+// 		wg.Done();
+// 		registerChan<-workerName
+// 	}else{
+// 		workerName := <-registerChan
+// 		deriveWork(workerName,jobName,mapFiles,phase,n_other,c,registerChan,wg)
+// 	}
 }

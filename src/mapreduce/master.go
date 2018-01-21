@@ -37,9 +37,12 @@ func (mr *Master) Register(args *RegisterArgs, _ *struct{}) error {
 	mr.Lock()
 	defer mr.Unlock()
 	debug("Register: worker %s\n", args.Worker)
+	// fmt.Println("======================")
+	// fmt.Println(args.Worker)
 	mr.workers = append(mr.workers, args.Worker)
-
+	// /var/tmp/824-1000/mr24017-worker0
 	// tell forwardRegistrations() that there's a new workers[] entry.
+	// 这里广播什么意思
 	mr.newCond.Broadcast()
 
 	return nil
@@ -84,13 +87,20 @@ func Sequential(jobName string, files []string, nreduce int,
 // helper function that sends information about all existing
 // and newly registered workers to channel ch. schedule()
 // reads ch to learn about workers.
+// 这里是很重要的一部
+// 这里延迟等待了runworker
+// 为什么会延迟
+// 应该是go的一个定式
+//无限循环等待
 func (mr *Master) forwardRegistrations(ch chan string) {
 	i := 0
 	for {
 		mr.Lock()
+		fmt.Println(len(mr.workers))
 		if len(mr.workers) > i {
 			// there's a worker that we haven't told schedule() about.
 			w := mr.workers[i]
+
 			go func() { ch <- w }() // send without holding the lock.
 			i = i + 1
 		} else {
@@ -119,11 +129,16 @@ func Distributed(jobName string, files []string, nreduce int, master string) (mr
 	// 首先是对主控节点的初始化
 	// 两个chan一个锁定期唤醒锁
 	// 一个chan表示中断，一个表示完成
-	// 关于go的三个锁(Mutex、WaitGroup、Cond)
 	mr = newMaster(master)
+
+	// 主节点建立rpc
 	mr.startRPCServer()
+	
+	// 这里的run有什么用
+	
 	go mr.run(jobName, files, nreduce,
 		func(phase jobPhase) {
+			fmt.Println(phase)
 			ch := make(chan string)
 			go mr.forwardRegistrations(ch)
 			schedule(mr.jobName, mr.files, mr.nReduce, phase, ch)
@@ -150,13 +165,13 @@ func (mr *Master) run(jobName string, files []string, nreduce int,
 	schedule func(phase jobPhase),
 	finish func(),
 ) {
-	// 一个总状态的节点
+
 	mr.jobName = jobName
 	mr.files = files
 	mr.nReduce = nreduce
 
 	fmt.Printf("%s: Starting Map/Reduce task %s\n", mr.address, mr.jobName)
-
+	fmt.Printf("---------------")
 	schedule(mapPhase)
 	schedule(reducePhase)
 	finish()

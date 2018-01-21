@@ -28,6 +28,7 @@ type Worker struct {
 
 // DoTask is called by the master when a new task is being scheduled on this
 // worker.
+// 这里是schedule调用的dotask
 func (wk *Worker) DoTask(arg *DoTaskArgs, _ *struct{}) error {
 	fmt.Printf("%s: given %v task #%d on file %s (nios: %d)\n",
 		wk.name, arg.Phase, arg.TaskNumber, arg.File, arg.NumOtherPhase)
@@ -43,7 +44,7 @@ func (wk *Worker) DoTask(arg *DoTaskArgs, _ *struct{}) error {
 		// time to a given worker.
 		log.Fatal("Worker.DoTask: more than one DoTask sent concurrently to a single worker\n")
 	}
-
+	// 在这里进行了任务处理，运行了doMap，和doReduce
 	switch arg.Phase {
 	case mapPhase:
 		doMap(arg.JobName, arg.TaskNumber, arg.File, arg.NumOtherPhase, wk.Map)
@@ -70,6 +71,10 @@ func (wk *Worker) Shutdown(_ *struct{}, res *ShutdownReply) error {
 	return nil
 }
 
+//这一步很重要
+// 这个地方是worker的register
+// 这个 Master.Register
+// 是那个
 // Tell the master we exist and ready to work
 func (wk *Worker) register(master string) {
 	args := new(RegisterArgs)
@@ -82,6 +87,8 @@ func (wk *Worker) register(master string) {
 
 // RunWorker sets up a connection with the master, registers its address, and
 // waits for tasks to be scheduled.
+// 这个是work的rpcserver吧
+// 这里是两个worker
 func RunWorker(MasterAddress string, me string,
 	MapFunc func(string, string) []KeyValue,
 	ReduceFunc func(string, []string) string,
@@ -91,10 +98,15 @@ func RunWorker(MasterAddress string, me string,
 	wk := new(Worker)
 	// 使用wk作为公共对象
 	// 链接生成server
+	// 这里重点
+	// 生成 worker的rpcserver
 	wk.name = me
 	wk.Map = MapFunc
 	wk.Reduce = ReduceFunc
 	wk.nRPC = nRPC
+
+
+
 	rpcs := rpc.NewServer()
 	rpcs.Register(wk)
 
@@ -106,10 +118,12 @@ func RunWorker(MasterAddress string, me string,
 	}
 	wk.l = l
 
+	// 这个是之前声明的主节点地址
 	fmt.Println("11111111111111111111111")
-	fmt.Println(MasterAddress)
+	// fmt.Println(MasterAddress)
+	fmt.Println(nRPC)
 	fmt.Println("11111111111111111111111")
-	
+
 	wk.register(MasterAddress)
 
 	// DON'T MODIFY CODE BELOW
@@ -121,6 +135,7 @@ func RunWorker(MasterAddress string, me string,
 		}
 		wk.Unlock()
 		conn, err := wk.l.Accept()
+	// 在这里就是10 然后减少
 		if err == nil {
 			wk.Lock()
 			wk.nRPC--

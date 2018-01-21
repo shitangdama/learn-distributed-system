@@ -23,6 +23,7 @@ func (mr *Master) startRPCServer() {
 	// 主核心的rpc设置
 	rpcs := rpc.NewServer()
 	rpcs.Register(mr)
+	
 	os.Remove(mr.address) // only needed for "unix"
 	// 监听地址
 	// 这里链接不是一个端口，是一个文件地址？
@@ -36,6 +37,7 @@ func (mr *Master) startRPCServer() {
 	// now that we are listening on the master address, can fork off
 	// accepting connections to another thread.
 	go func() {
+		// 该循环一直在进行
 	loop:
 		for {
 			select {
@@ -44,7 +46,7 @@ func (mr *Master) startRPCServer() {
 					break loop
 				default:
 			}
-
+			// fmt.Println("1")
 			conn, err := mr.l.Accept()
 			if err == nil {
 				go func() {

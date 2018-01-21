@@ -136,9 +136,12 @@ func port(suffix string) string {
 
 func setup() *Master {
 	// nMap = 20
+	// 先创建好20个文件
+	// 这个文件里面有个数据
 	files := makeInputs(nMap)
 	master := port("master")
 	// /var/tmp/824-1000/mr5197-master
+	// 这个函数到底是干嘛的
 	mr := Distributed("test", files, nReduce, master)
 	return mr
 }
@@ -167,8 +170,15 @@ func TestSequentialMany(t *testing.T) {
 }
 
 func TestBasic(t *testing.T) {
+	// 1.初始化住节点
+	// 初始化两个worker
+
+	// 初始化主节点
 	mr := setup()
+// 在这里生成worker节点
 	for i := 0; i < 2; i++ {
+		// 运行任务
+
 		go RunWorker(mr.address, port("worker"+strconv.Itoa(i)),
 			MapFunc, ReduceFunc, -1)
 	}
@@ -176,7 +186,7 @@ func TestBasic(t *testing.T) {
 	check(t, mr.files)
 	checkWorker(t, mr.stats)
 	cleanup(mr)
-	// 
+	
 }
 
 func TestOneFailure(t *testing.T) {
