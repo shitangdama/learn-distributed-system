@@ -19,8 +19,10 @@ import "sync"
 // (much more than the paper's range of timeouts).
 const RaftElectionTimeout = 1000 * time.Millisecond
 
+// 第一个实验
 func TestInitialElection2A(t *testing.T) {
 	servers := 3
+	// 主要功能是创建初始化raft系统，返回值是config类型。
 	cfg := make_config(t, servers, false)
 	defer cfg.cleanup()
 

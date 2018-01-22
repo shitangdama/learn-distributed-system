@@ -17,8 +17,12 @@ package raft
 //   in the same server.
 //
 
-import "sync"
-import "labrpc"
+import (
+	"fmt"
+	"sync"
+	"labrpc"
+	"time"
+)
 
 // import "bytes"
 // import "labgob"
@@ -42,9 +46,22 @@ type ApplyMsg struct {
 	CommandIndex int
 }
 
+const (
+	STATE_LEADER = iota
+	STATE_CANDIDATE
+	STATE_FOLLOWER
+	// HEARTBEAT = 50 * time.Millisecond
+)
+
+type LogEntry struct {
+	Command interface{}
+	Term    int
+}
+
 //
 // A Go object implementing a single Raft peer.
 //
+// 首先是根据论文补充raft结构
 type Raft struct {
 	mu        sync.Mutex          // Lock to protect shared access to this peer's state
 	peers     []*labrpc.ClientEnd // RPC end points of all peers
@@ -55,15 +72,44 @@ type Raft struct {
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
 
+	// Persist state on all servers
+	// 所有服务器上持久存在的
+	currentTerm 	int //服务器最后一次知道的任期号（初始化为 0，持续递增）
+	votedFor 	int //在当前获得选票的候选人的 Id
+	log []LogEntry //日志条目集；每一个条目包含一个用户状态机执行的指令，和收到时的任期号
+
+	// 所有服务器上经常变的
+	commitIndex	int //已知的最大的已经被提交的日志条目的索引值
+	lastApplied	int //最后被应用到状态机的日志条目索引值（初始化为 0，持续递增）
+
+	// 在领导人里经常改变的 （选举后重新初始化）
+	nextIndex   []int
+	matchIndex  []int
+
+	grantedVotesCount int
+	// 对于状态是三个1:follower,2:candidate,3:leader
+	state int//当前节点状态 有几个状态
+	applyCh           chan ApplyMsg
+
+	// 选举是通过定时器实现的
+	// 这里定时器要求是随机时间
+	// time *time.Timer
+
 }
 
 // return currentTerm and whether this server
 // believes it is the leader.
+// 在初始化时候用的了
 func (rf *Raft) GetState() (int, bool) {
 
 	var term int
 	var isleader bool
 	// Your code here (2A).
+	// 对着一点的
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	term = rf.currentTerm
+	isleader = (rf.state == STATE_LEADER)
 	return term, isleader
 }
 
@@ -113,8 +159,24 @@ func (rf *Raft) readPersist(data []byte) {
 // example RequestVote RPC arguments structure.
 // field names must start with capital letters!
 //
+// |term| 领导人的任期号|
+// |leaderId| 领导人的 Id，以便于跟随者重定向请求|
+// |prevLogIndex|新的日志条目紧随之前的索引值|
+// |prevLogTerm|prevLogIndex 条目的任期号|
+// |entries[]|准备存储的日志条目（表示心跳时为空；一次性发送多个是为了提高效率）
+// |leaderCommit|领导人已经提交的日志的索引值|
+
+// | 返回值| 解释|
+// |---|---|
+// |term|当前的任期号，用于领导人去更新自己|
+// |success|跟随者包含了匹配上 prevLogIndex 和 prevLogTerm 的日志时为真|
+// 这里怎么和论文不太一样
 type RequestVoteArgs struct {
 	// Your data here (2A, 2B).
+	term		int//候选人的任期号
+	CandidateId	int//请求选票的候选人的id
+	LastLogIndex int//候选人的最后日志条目的索引值
+	LastLogTerm	int//候选人最后日志条目的任期号
 }
 
 //
@@ -123,6 +185,8 @@ type RequestVoteArgs struct {
 //
 type RequestVoteReply struct {
 	// Your data here (2A).
+	Term		int //当前任期号，以便于候选人去更新自己的任期号
+	VoteGranted	bool//候选人赢得了次张选票时为真
 }
 
 //
@@ -130,6 +194,8 @@ type RequestVoteReply struct {
 //
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
+	// ok := rf.peers[server].Call("Raft.RequestVote", args, reply)
+	// return ok
 }
 
 //
@@ -214,16 +280,52 @@ func (rf *Raft) Kill() {
 //
 func Make(peers []*labrpc.ClientEnd, me int,
 	persister *Persister, applyCh chan ApplyMsg) *Raft {
+
+	
+	// fmt.Println(me)
 	rf := &Raft{}
 	rf.peers = peers
 	rf.persister = persister
+	// 每个节点的编号
 	rf.me = me
 
-	// Your initialization code here (2A, 2B, 2C).
+	// 初始状态是跟随，所有都是跟随
+	rf.state = STATE_FOLLOWER
+	// 最后任期的序号
+	rf.currentTerm = 0
+	rf.votedFor = -1// 投票leader序号
+	rf.log = make([]LogEntry, 0)// 初始化日志数组，关于日志的信息，要研究下
+
+	//这里用的是0到时候要改变整个logcommit部分
+	rf.commitIndex = 0
+	rf.lastApplied = 0
+	rf.nextIndex = make([]int, len(peers))
+	rf.matchIndex = make([]int, len(peers))
+
+	rf.grantedVotesCount = 0
+	rf.state = STATE_FOLLOWER
+	rf.applyCh = applyCh
+	// rf.time = time.NewTimer(1 * time.Millisecond)
+
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
 
+	// 开始准备选举
+	rf.persist()
+	// rf.resetTimer()
+
+
+	// raft选举机制是透过定时器推动的，所以首先实现定时器相关。
+	go rf.startHeartbeat()
 
 	return rf
+}
+
+
+// 定时器推动选举
+func (rf *Raft) startHeartbeat() {
+	fmt.Println("选举开始")
+
+
 }

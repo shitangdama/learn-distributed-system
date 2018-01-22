@@ -60,9 +60,11 @@ func make_config(t *testing.T, n int, unreliable bool) *config {
 	cfg.net = labrpc.MakeNetwork()
 	cfg.n = n
 	cfg.applyErr = make([]string, cfg.n)
+	// 这里有使用raft
 	cfg.rafts = make([]*Raft, cfg.n)
 	cfg.connected = make([]bool, cfg.n)
 	cfg.saved = make([]*Persister, cfg.n)
+	// 每个端口链接的name，是一个矩阵
 	cfg.endnames = make([][]string, cfg.n)
 	cfg.logs = make([]map[int]int, cfg.n)
 
@@ -71,12 +73,16 @@ func make_config(t *testing.T, n int, unreliable bool) *config {
 	cfg.net.LongDelays(true)
 
 	// create a full set of Rafts.
+	// 初始化raft节点
 	for i := 0; i < cfg.n; i++ {
+		// 日志
 		cfg.logs[i] = map[int]int{}
+		// 启动
 		cfg.start1(i)
 	}
 
 	// connect everyone
+	// 初始节点网络
 	for i := 0; i < cfg.n; i++ {
 		cfg.connect(i)
 	}
@@ -123,6 +129,7 @@ func (cfg *config) crash1(i int) {
 // this server. since we cannot really kill it.
 //
 func (cfg *config) start1(i int) {
+	// 先清理以存在网络节点
 	cfg.crash1(i)
 
 	// a fresh set of outgoing ClientEnd names.
@@ -276,18 +283,24 @@ func (cfg *config) setlongreordering(longrel bool) {
 
 // check that there's exactly one leader.
 // try a few times in case re-elections are needed.
+// 这个是lib1实验的所要实现的选举部分
 func (cfg *config) checkOneLeader() int {
+	// 选举迭代次数为十次
 	for iters := 0; iters < 10; iters++ {
 		time.Sleep(500 * time.Millisecond)
 		leaders := make(map[int][]int)
+		// 判断是否有leader，收集到
+		// 这里有问题，没有leader怎么办
 		for i := 0; i < cfg.n; i++ {
 			if cfg.connected[i] {
+				fmt.Println("========")
+				fmt.Println(cfg.rafts[i].GetState())
+				fmt.Println("========")
 				if t, leader := cfg.rafts[i].GetState(); leader {
 					leaders[t] = append(leaders[t], i)
 				}
 			}
 		}
-
 		lastTermWithLeader := -1
 		for t, leaders := range leaders {
 			if len(leaders) > 1 {
@@ -301,6 +314,8 @@ func (cfg *config) checkOneLeader() int {
 		if len(leaders) != 0 {
 			return leaders[lastTermWithLeader][0]
 		}
+		// 迭代一次循环
+		fmt.Println("--------------------------------")
 	}
 	cfg.t.Fatalf("expected one leader, got none")
 	return -1
