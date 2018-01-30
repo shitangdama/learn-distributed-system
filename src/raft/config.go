@@ -165,6 +165,9 @@ func (cfg *config) start1(i int) {
 	go func() {
 		for m := range applyCh {
 			err_msg := ""
+			fmt.Println("1111111111111111111111")
+			fmt.Println(m.CommandValid)
+			fmt.Println("1111111111111111111111")
 			if m.CommandValid == false {
 				// ignore other types of ApplyMsg
 			} else if v, ok := (m.Command).(int); ok {
