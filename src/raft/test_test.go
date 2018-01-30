@@ -9,7 +9,7 @@ package raft
 //
 
 import "testing"
-// import "fmt"
+import "fmt"
 import "time"
 import "math/rand"
 import "sync/atomic"
@@ -31,7 +31,7 @@ func TestInitialElection2A(t *testing.T) {
 	// is a leader elected?
 	cfg.checkOneLeader()
 
-	does the leader+term stay the same if there is no network failure?
+	// does the leader+term stay the same if there is no network failure?
 	term1 := cfg.checkTerms()
 	time.Sleep(2 * RaftElectionTimeout)
 	term2 := cfg.checkTerms()
