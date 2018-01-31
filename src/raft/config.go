@@ -165,9 +165,9 @@ func (cfg *config) start1(i int) {
 	go func() {
 		for m := range applyCh {
 			err_msg := ""
-			fmt.Println("1111111111111111111111")
-			fmt.Println(m.CommandValid)
-			fmt.Println("1111111111111111111111")
+			// fmt.Println("1111111111111111111111")
+			// fmt.Println(m.CommandValid)
+			// fmt.Println("1111111111111111111111")
 			if m.CommandValid == false {
 				// ignore other types of ApplyMsg
 			} else if v, ok := (m.Command).(int); ok {
@@ -356,6 +356,7 @@ func (cfg *config) checkNoLeader() {
 func (cfg *config) nCommitted(index int) (int, interface{}) {
 	count := 0
 	cmd := -1
+	
 	for i := 0; i < len(cfg.rafts); i++ {
 		if cfg.applyErr[i] != "" {
 			cfg.t.Fatal(cfg.applyErr[i])
@@ -363,6 +364,7 @@ func (cfg *config) nCommitted(index int) (int, interface{}) {
 
 		cfg.mu.Lock()
 		cmd1, ok := cfg.logs[i][index]
+		fmt.Println(cfg.logs[i])
 		cfg.mu.Unlock()
 
 		if ok {

@@ -53,6 +53,7 @@ func TestReElection2A(t *testing.T) {
 
 	// if the leader disconnects, a new one should be elected.
 	cfg.disconnect(leader1)
+	fmt.Println("duankailianjie")
 	cfg.checkOneLeader()
 
 	// if the old leader rejoins, that shouldn't
@@ -88,6 +89,7 @@ func TestBasicAgree2B(t *testing.T) {
 	iters := 3
 	for index := 1; index < iters+1; index++ {
 		nd, _ := cfg.nCommitted(index)
+		// fmt.Println(nd)
 		if nd > 0 {
 			t.Fatalf("some have committed before Start()")
 		}
